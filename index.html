@@ -1,0 +1,673 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>每日练习打卡</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        .container { max-width: 800px; margin: 0 auto; }
+        .header { text-align: center; color: white; margin-bottom: 30px; }
+        .header h1 { font-size: 2em; margin-bottom: 10px; }
+        .date-display { font-size: 1.2em; opacity: 0.9; }
+        .card {
+            background: white;
+            border-radius: 16px;
+            padding: 24px;
+            margin-bottom: 20px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+        }
+        .tabs { display: flex; gap: 10px; margin-bottom: 20px; }
+        .tab-btn {
+            flex: 1; padding: 12px; border: none; background: #f0f0f0;
+            border-radius: 8px; cursor: pointer; font-size: 1em; transition: all 0.3s;
+        }
+        .tab-btn.active {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        .tab-btn:hover:not(.active) { background: #e0e0e0; }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+        .plan-section { margin-bottom: 20px; padding: 20px; background: #f8f9ff; border-radius: 12px; }
+        .plan-title { font-weight: 600; margin-bottom: 15px; color: #333; font-size: 1.1em; }
+        .practice-block { margin-bottom: 25px; padding: 15px; background: white; border-radius: 10px; border: 1px solid #eee; }
+        .practice-name { font-weight: 600; font-size: 1.1em; margin-bottom: 15px; color: #333; }
+        .suggestion-label { font-size: 0.9em; color: #666; margin-bottom: 10px; }
+        .suggestion-item {
+            padding: 12px 16px; background: #f8f9fa; border: 2px solid #e0e0e0;
+            border-radius: 8px; cursor: pointer; margin-bottom: 8px; transition: all 0.2s;
+        }
+        .suggestion-item:hover { border-color: #667eea; background: #f0f4ff; }
+        .suggestion-item.selected { border-color: #667eea; background: #e8edff; }
+        .suggestion-text { font-size: 0.95em; color: #333; }
+        .suggestion-reason { font-size: 0.8em; color: #888; margin-top: 5px; }
+        .custom-area { margin-top: 15px; }
+        .custom-toggle { display: flex; align-items: center; gap: 8px; cursor: pointer; margin-bottom: 10px; }
+        .custom-toggle input { width: 18px; height: 18px; }
+        .custom-input {
+            width: 100%; padding: 12px; border: 2px solid #e0e0e0; border-radius: 8px;
+            font-size: 1em; resize: none; min-height: 60px; display: none;
+        }
+        .custom-input.show { display: block; }
+        .custom-input:focus { outline: none; border-color: #667eea; }
+        .btn-row { display: flex; gap: 10px; margin-top: 15px; }
+        .btn {
+            padding: 12px 24px; border: none; border-radius: 8px;
+            cursor: pointer; font-size: 1em; transition: all 0.3s;
+        }
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white; flex: 1;
+        }
+        .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 5px 20px rgba(102,126,234,0.4); }
+        .btn-secondary { background: #f0f0f0; color: #666; }
+        .btn-secondary:hover { background: #e0e0e0; }
+        .btn-small { padding: 8px 16px; font-size: 0.9em; }
+        .practice-item { padding: 20px; background: #f8f9fa; border-radius: 12px; margin-bottom: 15px; }
+        .practice-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
+        .practice-content { font-size: 0.9em; color: #555; margin-bottom: 15px; padding: 12px; background: white; border-radius: 8px; border-left: 3px solid #667eea; }
+        .practice-status { padding: 6px 12px; border-radius: 20px; font-size: 0.85em; }
+        .status-pending { background: #fff3e0; color: #f57c00; }
+        .status-done { background: #e8f5e9; color: #43a047; }
+        .form-group { margin-bottom: 15px; }
+        .form-group label { display: block; margin-bottom: 8px; font-weight: 500; color: #555; }
+        .form-group textarea, .form-group select {
+            width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 8px; font-size: 1em;
+        }
+        .form-group textarea { resize: vertical; min-height: 80px; }
+        .form-group textarea:focus, .form-group select:focus { outline: none; border-color: #667eea; }
+        .stats-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; margin-bottom: 20px; }
+        .stat-item { text-align: center; padding: 15px; background: #f8f9fa; border-radius: 10px; }
+        .stat-value { font-size: 2em; font-weight: bold; color: #667eea; }
+        .stat-label { font-size: 0.85em; color: #888; margin-top: 5px; }
+        .history-item { padding: 15px; background: #f8f9fa; border-radius: 10px; margin-bottom: 10px; }
+        .history-date { font-weight: 600; color: #333; margin-bottom: 8px; }
+        .history-practices { display: flex; flex-wrap: wrap; gap: 8px; }
+        .history-tag { padding: 4px 10px; border-radius: 15px; font-size: 0.8em; }
+        .tag-done { background: #e8f5e9; color: #43a047; }
+        .tag-missed { background: #ffebee; color: #e53935; }
+        .background-section { margin-top: 20px; padding-top: 20px; border-top: 1px solid #eee; }
+        .background-toggle { color: #667eea; cursor: pointer; font-size: 0.9em; }
+        .background-editor { display: none; margin-top: 15px; }
+        .background-editor.show { display: block; }
+        .background-editor textarea { width: 100%; min-height: 120px; padding: 12px; border: 1px solid #ddd; border-radius: 8px; font-size: 0.9em; }
+        .empty-state { text-align: center; padding: 40px; color: #888; }
+        .empty-icon { font-size: 3em; margin-bottom: 15px; }
+        .chart-container { height: 200px; margin-top: 20px; }
+        .hidden { display: none !important; }
+        .card-title { font-size: 1.2em; color: #333; margin-bottom: 20px; }
+        .completed-note { padding: 12px; background: #f0f0f0; border-radius: 8px; color: #555; }
+        .checkin-time { color: #888; font-size: 0.85em; margin-top: 10px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🎯 每日练习打卡</h1>
+            <div class="date-display" id="dateDisplay">加载中...</div>
+        </div>
+        
+        <div class="card">
+            <div class="tabs">
+                <button class="tab-btn active" id="tabToday">今日打卡</button>
+                <button class="tab-btn" id="tabHistory">历史记录</button>
+                <button class="tab-btn" id="tabStats">数据统计</button>
+            </div>
+            
+            <div class="tab-content active" id="contentToday">
+                <div id="mainContent">加载中...</div>
+            </div>
+            
+            <div class="tab-content" id="contentHistory">
+                <div class="card-title">📅 历史记录</div>
+                <div id="historyList">加载中...</div>
+            </div>
+            
+            <div class="tab-content" id="contentStats">
+                <div class="card-title">📊 数据统计</div>
+                <div class="stats-grid">
+                    <div class="stat-item">
+                        <div class="stat-value" id="totalDays">0</div>
+                        <div class="stat-label">打卡天数</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value" id="streakDays">0</div>
+                        <div class="stat-label">连续天数</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value" id="completionRate">0%</div>
+                        <div class="stat-label">完成率</div>
+                    </div>
+                </div>
+                <div class="chart-container">
+                    <canvas id="progressChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+    (function() {
+        'use strict';
+        
+        // 配置
+        var STORAGE_KEY = 'practice-checkin-v2';
+        var BG_KEY = 'practice-background';
+        
+        var DEFAULT_BG = '我有一个缺点：我的临场反应很差，我很难回答别人的随机问题，但我其实也不是不知道，只是我需要沉思，思考后给出答案。这会导向另一个问题，就是我的惰性，有时候会让我不想去思考很多事情。我会下意识回避、抵抗。我最容做的决定是不做决定，不去选择、思考、推进，第一反应是回避、拖延、忽略。';
+        
+        var PRACTICES = [
+            { id: 'improv', name: '临场反应练习', icon: '⚡' },
+            { id: 'decision', name: '决策练习', icon: '🎯' }
+        ];
+        
+        var SUGGESTIONS = {
+            improv: [
+                { text: '找同事随机问你3个工作问题，10秒内开始回答', reason: '真实场景练习快速反应' },
+                { text: '打开新闻，随机选一条，30秒说出3个观点', reason: '练习快速组织观点' },
+                { text: '回顾昨天一个对话，想象如何更好回应', reason: '通过复盘积累模式' },
+                { text: '想一个常被问但答不好的问题，写下标准答案', reason: '提前准备高频问题' },
+                { text: '脑中模拟一个会议场景，预演可能的问题', reason: '预演减少临场紧张' },
+                { text: '选一个话题，1分钟准备，录音讲2分钟', reason: '练习有限时间组织思路' }
+            ],
+            decision: [
+                { text: '列出今天3个小决定，5分钟内全部做完', reason: '用小决定练习果断' },
+                { text: '分析最近一个拖延的决定，找出在害怕什么', reason: '理解回避的根源' },
+                { text: '做最坏情况分析：这个决定错了会怎样？', reason: '降低对失败的恐惧' },
+                { text: '今天遇到选择时，用"足够好"而非"完美"标准', reason: '练习接受不完美' },
+                { text: '找一件想做但没开始的小事，今天做第一步', reason: '打破拖延惯性' },
+                { text: '设24小时期限，强制做一个拖延的决定', reason: '用外部限制克服阻力' }
+            ]
+        };
+        
+        // 状态
+        var selectedContent = {};
+        var customMode = {};
+        var chart = null;
+        
+        // 工具函数
+        function getTodayKey() {
+            var d = new Date();
+            var m = d.getMonth() + 1;
+            var day = d.getDate();
+            return d.getFullYear() + '-' + (m < 10 ? '0' + m : m) + '-' + (day < 10 ? '0' + day : day);
+        }
+        
+        function getData() {
+            try {
+                var raw = localStorage.getItem(STORAGE_KEY);
+                if (raw) return JSON.parse(raw);
+            } catch (e) {}
+            return { days: {} };
+        }
+        
+        function saveData(data) {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+        }
+        
+        function getBackground() {
+            return localStorage.getItem(BG_KEY) || DEFAULT_BG;
+        }
+        
+        function shuffle(arr) {
+            var result = arr.slice();
+            for (var i = result.length - 1; i > 0; i--) {
+                var j = Math.floor(Math.random() * (i + 1));
+                var temp = result[i];
+                result[i] = result[j];
+                result[j] = temp;
+            }
+            return result;
+        }
+        
+        // 初始化
+        function init() {
+            console.log('初始化开始');
+            updateDate();
+            setupTabs();
+            renderMain();
+            renderHistory();
+            updateStats();
+            console.log('初始化完成');
+        }
+        
+        function updateDate() {
+            var now = new Date();
+            var weeks = ['日', '一', '二', '三', '四', '五', '六'];
+            var text = now.getFullYear() + '年' + (now.getMonth() + 1) + '月' + now.getDate() + '日 星期' + weeks[now.getDay()];
+            document.getElementById('dateDisplay').innerText = text;
+        }
+        
+        function setupTabs() {
+            document.getElementById('tabToday').onclick = function() { switchTab('today'); };
+            document.getElementById('tabHistory').onclick = function() { switchTab('history'); };
+            document.getElementById('tabStats').onclick = function() { switchTab('stats'); };
+        }
+        
+        function switchTab(name) {
+            var tabs = ['Today', 'History', 'Stats'];
+            for (var i = 0; i < tabs.length; i++) {
+                var t = tabs[i];
+                var btn = document.getElementById('tab' + t);
+                var content = document.getElementById('content' + t);
+                if (t.toLowerCase() === name) {
+                    btn.className = 'tab-btn active';
+                    content.className = 'tab-content active';
+                } else {
+                    btn.className = 'tab-btn';
+                    content.className = 'tab-content';
+                }
+            }
+            if (name === 'stats') {
+                setTimeout(renderChart, 100);
+            }
+        }
+        
+        // 主内容渲染
+        function renderMain() {
+            var data = getData();
+            var today = getTodayKey();
+            var dayData = data.days[today];
+            
+            if (dayData && dayData.planSet) {
+                renderCheckinMode(dayData);
+            } else {
+                renderPlanMode();
+            }
+        }
+        
+        // 计划模式
+        function renderPlanMode() {
+            var html = '<div class="plan-section">';
+            html += '<div class="plan-title">📋 确认今日练习计划</div>';
+            
+            for (var i = 0; i < PRACTICES.length; i++) {
+                var p = PRACTICES[i];
+                var suggestions = shuffle(SUGGESTIONS[p.id]).slice(0, 4);
+                
+                html += '<div class="practice-block">';
+                html += '<div class="practice-name">' + p.icon + ' ' + p.name + '</div>';
+                html += '<div class="suggestion-label">💡 AI 建议（点击选择）：</div>';
+                
+                for (var j = 0; j < suggestions.length; j++) {
+                    var s = suggestions[j];
+                    html += '<div class="suggestion-item" data-pid="' + p.id + '" data-text="' + encodeURIComponent(s.text) + '">';
+                    html += '<div class="suggestion-text">' + s.text + '</div>';
+                    html += '<div class="suggestion-reason">📌 ' + s.reason + '</div>';
+                    html += '</div>';
+                }
+                
+                html += '<button class="btn btn-secondary btn-small" style="margin-top:10px" data-refresh="' + p.id + '">🔄 换一批</button>';
+                
+                html += '<div class="custom-area">';
+                html += '<label class="custom-toggle"><input type="checkbox" data-custom="' + p.id + '"> <span>自己输入内容</span></label>';
+                html += '<textarea class="custom-input" data-input="' + p.id + '" placeholder="输入你想练习的具体内容..."></textarea>';
+                html += '</div>';
+                
+                html += '</div>';
+            }
+            
+            html += '<div class="btn-row"><button class="btn btn-primary" id="confirmBtn">✅ 确认今日计划</button></div>';
+            
+            html += '<div class="background-section">';
+            html += '<span class="background-toggle" id="bgToggle">⚙️ 编辑背景信息</span>';
+            html += '<div class="background-editor" id="bgEditor">';
+            html += '<textarea id="bgText">' + getBackground() + '</textarea>';
+            html += '<div class="btn-row"><button class="btn btn-secondary" id="bgSaveBtn">保存</button></div>';
+            html += '</div>';
+            html += '</div>';
+            
+            html += '</div>';
+            
+            document.getElementById('mainContent').innerHTML = html;
+            
+            // 绑定事件
+            bindPlanEvents();
+        }
+        
+        function bindPlanEvents() {
+            // 建议点击
+            var items = document.querySelectorAll('.suggestion-item');
+            for (var i = 0; i < items.length; i++) {
+                items[i].onclick = function() {
+                    var pid = this.getAttribute('data-pid');
+                    if (customMode[pid]) return;
+                    
+                    // 取消同组选中
+                    var siblings = document.querySelectorAll('.suggestion-item[data-pid="' + pid + '"]');
+                    for (var j = 0; j < siblings.length; j++) {
+                        siblings[j].className = 'suggestion-item';
+                    }
+                    this.className = 'suggestion-item selected';
+                    selectedContent[pid] = decodeURIComponent(this.getAttribute('data-text'));
+                };
+            }
+            
+            // 刷新按钮
+            var refreshBtns = document.querySelectorAll('[data-refresh]');
+            for (var i = 0; i < refreshBtns.length; i++) {
+                refreshBtns[i].onclick = function() {
+                    var pid = this.getAttribute('data-refresh');
+                    delete selectedContent[pid];
+                    renderMain();
+                };
+            }
+            
+            // 自定义模式
+            var customChecks = document.querySelectorAll('[data-custom]');
+            for (var i = 0; i < customChecks.length; i++) {
+                customChecks[i].onchange = function() {
+                    var pid = this.getAttribute('data-custom');
+                    customMode[pid] = this.checked;
+                    var input = document.querySelector('[data-input="' + pid + '"]');
+                    input.className = this.checked ? 'custom-input show' : 'custom-input';
+                    if (this.checked) {
+                        delete selectedContent[pid];
+                        var siblings = document.querySelectorAll('.suggestion-item[data-pid="' + pid + '"]');
+                        for (var j = 0; j < siblings.length; j++) {
+                            siblings[j].className = 'suggestion-item';
+                        }
+                    }
+                };
+            }
+            
+            // 确认按钮
+            document.getElementById('confirmBtn').onclick = confirmPlan;
+            
+            // 背景信息
+            document.getElementById('bgToggle').onclick = function() {
+                var editor = document.getElementById('bgEditor');
+                editor.className = editor.className.indexOf('show') > -1 ? 'background-editor' : 'background-editor show';
+            };
+            
+            document.getElementById('bgSaveBtn').onclick = function() {
+                localStorage.setItem(BG_KEY, document.getElementById('bgText').value);
+                alert('已保存');
+            };
+        }
+        
+        function confirmPlan() {
+            var contents = {};
+            var valid = true;
+            
+            for (var i = 0; i < PRACTICES.length; i++) {
+                var p = PRACTICES[i];
+                var content = '';
+                
+                if (customMode[p.id]) {
+                    var input = document.querySelector('[data-input="' + p.id + '"]');
+                    content = input.value.trim();
+                } else {
+                    content = selectedContent[p.id] || '';
+                }
+                
+                if (!content) {
+                    valid = false;
+                    alert('请为 "' + p.name + '" 选择或输入练习内容');
+                    return;
+                }
+                contents[p.id] = content;
+            }
+            
+            // 保存
+            var data = getData();
+            var today = getTodayKey();
+            data.days[today] = {
+                planSet: true,
+                practices: {}
+            };
+            
+            for (var i = 0; i < PRACTICES.length; i++) {
+                var p = PRACTICES[i];
+                data.days[today].practices[p.id] = {
+                    content: contents[p.id],
+                    completed: false,
+                    notes: '',
+                    result: '',
+                    time: null
+                };
+            }
+            
+            saveData(data);
+            renderMain();
+        }
+        
+        // 打卡模式
+        function renderCheckinMode(dayData) {
+            var html = '';
+            
+            for (var i = 0; i < PRACTICES.length; i++) {
+                var p = PRACTICES[i];
+                var practice = dayData.practices[p.id] || {};
+                var done = practice.completed;
+                
+                html += '<div class="practice-item">';
+                html += '<div class="practice-header">';
+                html += '<span class="practice-name">' + p.icon + ' ' + p.name + '</span>';
+                html += '<span class="practice-status ' + (done ? 'status-done' : 'status-pending') + '">' + (done ? '✅ 已完成' : '⏳ 待完成') + '</span>';
+                html += '</div>';
+                
+                html += '<div class="practice-content">📋 今日内容：' + (practice.content || '未设置') + '</div>';
+                
+                if (done) {
+                    if (practice.notes) {
+                        html += '<div class="form-group"><label>心得体会</label><div class="completed-note">' + practice.notes + '</div></div>';
+                    }
+                    if (practice.result) {
+                        var resultMap = { great: '很好 - 有明显进步', good: '不错 - 完成了练习', normal: '一般 - 还需努力', hard: '困难 - 遇到阻碍' };
+                        html += '<div class="form-group"><label>练习效果</label><div class="completed-note">' + (resultMap[practice.result] || practice.result) + '</div></div>';
+                    }
+                    if (practice.time) {
+                        html += '<div class="checkin-time">打卡时间：' + practice.time + '</div>';
+                    }
+                } else {
+                    html += '<div class="form-group"><label>心得体会</label>';
+                    html += '<textarea data-notes="' + p.id + '" placeholder="记录练习过程中的感受...">' + (practice.notes || '') + '</textarea></div>';
+                    
+                    html += '<div class="form-group"><label>练习效果</label>';
+                    html += '<select data-result="' + p.id + '">';
+                    html += '<option value="">请选择</option>';
+                    html += '<option value="great">很好 - 有明显进步</option>';
+                    html += '<option value="good">不错 - 完成了练习</option>';
+                    html += '<option value="normal">一般 - 还需努力</option>';
+                    html += '<option value="hard">困难 - 遇到阻碍</option>';
+                    html += '</select></div>';
+                    
+                    html += '<button class="btn btn-primary" data-checkin="' + p.id + '">打卡完成</button>';
+                }
+                
+                html += '</div>';
+            }
+            
+            document.getElementById('mainContent').innerHTML = html;
+            
+            // 绑定打卡事件
+            var checkinBtns = document.querySelectorAll('[data-checkin]');
+            for (var i = 0; i < checkinBtns.length; i++) {
+                checkinBtns[i].onclick = function() {
+                    var pid = this.getAttribute('data-checkin');
+                    doCheckin(pid);
+                };
+            }
+        }
+        
+        function doCheckin(pid) {
+            var notes = document.querySelector('[data-notes="' + pid + '"]').value;
+            var result = document.querySelector('[data-result="' + pid + '"]').value;
+            
+            if (!result) {
+                alert('请选择练习效果');
+                return;
+            }
+            
+            var data = getData();
+            var today = getTodayKey();
+            
+            data.days[today].practices[pid].completed = true;
+            data.days[today].practices[pid].notes = notes;
+            data.days[today].practices[pid].result = result;
+            data.days[today].practices[pid].time = new Date().toLocaleTimeString();
+            
+            saveData(data);
+            renderMain();
+            renderHistory();
+            updateStats();
+        }
+        
+        // 历史记录
+        function renderHistory() {
+            var data = getData();
+            var days = Object.keys(data.days).sort().reverse();
+            
+            if (days.length === 0) {
+                document.getElementById('historyList').innerHTML = '<div class="empty-state"><div class="empty-icon">📝</div><div>还没有打卡记录</div></div>';
+                return;
+            }
+            
+            var html = '';
+            var count = Math.min(days.length, 14);
+            
+            for (var i = 0; i < count; i++) {
+                var day = days[i];
+                var dayData = data.days[day];
+                var parts = day.split('-');
+                
+                html += '<div class="history-item">';
+                html += '<div class="history-date">' + parts[1] + '月' + parts[2] + '日</div>';
+                html += '<div class="history-practices">';
+                
+                for (var j = 0; j < PRACTICES.length; j++) {
+                    var p = PRACTICES[j];
+                    var practice = dayData.practices ? dayData.practices[p.id] : null;
+                    var done = practice && practice.completed;
+                    html += '<span class="history-tag ' + (done ? 'tag-done' : 'tag-missed') + '">' + (done ? '✓ ' : '✗ ') + p.name + '</span>';
+                }
+                
+                html += '</div></div>';
+            }
+            
+            document.getElementById('historyList').innerHTML = html;
+        }
+        
+        // 统计
+        function updateStats() {
+            var data = getData();
+            var days = Object.keys(data.days);
+            var total = 0;
+            var completed = 0;
+            var possible = 0;
+            
+            for (var i = 0; i < days.length; i++) {
+                var dayData = data.days[days[i]];
+                if (dayData.planSet) {
+                    total++;
+                    for (var j = 0; j < PRACTICES.length; j++) {
+                        possible++;
+                        var p = dayData.practices ? dayData.practices[PRACTICES[j].id] : null;
+                        if (p && p.completed) completed++;
+                    }
+                }
+            }
+            
+            // 连续天数
+            var streak = 0;
+            for (var i = 0; i < 100; i++) {
+                var d = new Date();
+                d.setDate(d.getDate() - i);
+                var m = d.getMonth() + 1;
+                var day = d.getDate();
+                var key = d.getFullYear() + '-' + (m < 10 ? '0' + m : m) + '-' + (day < 10 ? '0' + day : day);
+                
+                var dayData = data.days[key];
+                if (!dayData || !dayData.planSet) {
+                    if (i === 0) continue;
+                    break;
+                }
+                
+                var allDone = true;
+                for (var j = 0; j < PRACTICES.length; j++) {
+                    var p = dayData.practices ? dayData.practices[PRACTICES[j].id] : null;
+                    if (!p || !p.completed) allDone = false;
+                }
+                
+                if (allDone) streak++;
+                else if (i > 0) break;
+            }
+            
+            var rate = possible > 0 ? Math.round(completed / possible * 100) : 0;
+            
+            document.getElementById('totalDays').innerText = total;
+            document.getElementById('streakDays').innerText = streak;
+            document.getElementById('completionRate').innerText = rate + '%';
+        }
+        
+        function renderChart() {
+            var data = getData();
+            var labels = [];
+            var values = [];
+            
+            for (var i = 6; i >= 0; i--) {
+                var d = new Date();
+                d.setDate(d.getDate() - i);
+                var m = d.getMonth() + 1;
+                var day = d.getDate();
+                var key = d.getFullYear() + '-' + (m < 10 ? '0' + m : m) + '-' + (day < 10 ? '0' + day : day);
+                
+                labels.push(m + '/' + day);
+                
+                var dayData = data.days[key];
+                if (dayData && dayData.planSet) {
+                    var done = 0;
+                    for (var j = 0; j < PRACTICES.length; j++) {
+                        var p = dayData.practices ? dayData.practices[PRACTICES[j].id] : null;
+                        if (p && p.completed) done++;
+                    }
+                    values.push(Math.round(done / PRACTICES.length * 100));
+                } else {
+                    values.push(0);
+                }
+            }
+            
+            var ctx = document.getElementById('progressChart').getContext('2d');
+            
+            if (chart) chart.destroy();
+            
+            chart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: '完成率 %',
+                        data: values,
+                        borderColor: '#667eea',
+                        backgroundColor: 'rgba(102,126,234,0.1)',
+                        fill: true,
+                        tension: 0.4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: { y: { beginAtZero: true, max: 100 } }
+                }
+            });
+        }
+        
+        // 启动
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', init);
+        } else {
+            init();
+        }
+    })();
+    </script>
+</body>
+</html>
